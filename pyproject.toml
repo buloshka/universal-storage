@@ -53,5 +53,7 @@ packages = ["src/storage"]
 [dependency-groups]
 dev = [
     "aiosqlite>=0.22.1",
+    "beanie>=1.30.0",
+    "motor>=3.7.1",
     "sqlalchemy[asyncio]>=2.1.9",
 ]

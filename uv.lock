@@ -846,6 +846,8 @@ sqlite = [
 [package.dev-dependencies]
 dev = [
     { name = "aiosqlite" },
+    { name = "beanie" },
+    { name = "motor" },
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 
@@ -871,5 +873,7 @@ provides-extras = ["sql", "postgres", "sqlite", "mysql", "mongo", "redis", "all"
 [package.metadata.requires-dev]
 dev = [
     { name = "aiosqlite", specifier = ">=0.22.1" },
+    { name = "beanie", specifier = ">=1.30.0" },
+    { name = "motor", specifier = ">=3.7.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.1.9" },
 ]
