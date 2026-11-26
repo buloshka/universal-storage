@@ -12,6 +12,9 @@ dependencies = [
     "pydantic-settings>=2.0,<3.0",
 ]
 
+[project.scripts]
+storage-init-alembic = "storage.cli.main:cli_entrypoint"
+
 [project.optional-dependencies]
 sql = [
     "sqlalchemy[asyncio]>=2.0,<3.0",
@@ -49,6 +52,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/storage"]
+include = [
+    "src/storage/adapters/sql/templates/*",
+    "src/storage/adapters/sql/templates/versions/.gitkeep",
+]
 
 [dependency-groups]
 dev = [
