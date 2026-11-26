@@ -1,15 +1,18 @@
 from typing import Any, Generic, TypeVar
 from uuid import UUID
 
-from pymongo import ReturnDocument
+from beanie import UpdateResponse
+from pydantic import BaseModel
 
 from storage.adapters.mongo.models import MongoBaseModel
 from storage.core.entity import utc_now
-from storage.core.repository import BaseRepository, EntityT, CreateSchemaT, UpdateSchemaT
+from storage.core.repository import BaseRepository
 from storage.exceptions import ConcurrencyError, NotFoundError
 
-
 DocT = TypeVar("DocT", bound=MongoBaseModel)
+EntityT = TypeVar("EntityT", bound=BaseModel)
+CreateSchemaT = TypeVar("CreateSchemaT", bound=BaseModel)
+UpdateSchemaT = TypeVar("UpdateSchemaT", bound=BaseModel)
 
 
 class MongoRepository(
@@ -24,13 +27,8 @@ class MongoRepository(
     model: type[DocT]
     entity_schema: type[EntityT]
 
-    def _to_entity(self, document: DocT | dict[str, Any]) -> EntityT:
-        """Convert a Beanie Document or raw BSON dict into a validated Pydantic entity."""
-        if isinstance(document, dict):
-            data = dict(document)
-            if "_id" in data and "id" not in data:
-                data["id"] = data.pop("_id")
-            return self.entity_schema.model_validate(data)
+    def _to_entity(self, document: DocT) -> EntityT:
+        """Convert a Beanie Document into a validated Pydantic entity."""
         return self.entity_schema.model_validate(document.model_dump())
 
     @staticmethod
@@ -76,18 +74,16 @@ class MongoRepository(
         if expected_version is not None:
             query["version"] = expected_version
 
-        collection = self.model.get_motor_collection()
-        updated_raw = await collection.find_one_and_update(
-            query,
+        updated_doc = await self.model.find_one(query).update(
             {
                 "$set": update_data,
                 "$inc": {"version": 1},
             },
-            return_document=ReturnDocument.AFTER,
+            response_type=UpdateResponse.NEW_DOCUMENT,
         )
 
-        if updated_raw is None:
-            exists = await collection.find_one({"_id": entity_id}, {"_id": 1})
+        if updated_doc is None:
+            exists = await self.model.find_one({"_id": entity_id})
             if exists is None:
                 raise NotFoundError(f"{self.model.__name__} with id={entity_id} was not found.")
             raise ConcurrencyError(
@@ -95,7 +91,7 @@ class MongoRepository(
                 f"expected version {expected_version}."
             )
 
-        return self._to_entity(updated_raw)
+        return self._to_entity(updated_doc)
 
     async def delete(
         self,
@@ -107,11 +103,11 @@ class MongoRepository(
         if expected_version is not None:
             query["version"] = expected_version
 
-        collection = self.model.get_motor_collection()
-        result = await collection.delete_one(query)
+        result = await self.model.find_one(query).delete()
+        deleted_count = result.deleted_count if result is not None else 0
 
-        if result.deleted_count == 0:
-            exists = await collection.find_one({"_id": entity_id}, {"_id": 1})
+        if deleted_count == 0:
+            exists = await self.model.find_one({"_id": entity_id})
             if exists is None:
                 raise NotFoundError(f"{self.model.__name__} with id={entity_id} was not found.")
             raise ConcurrencyError(

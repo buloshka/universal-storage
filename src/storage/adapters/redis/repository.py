@@ -1,12 +1,17 @@
-from typing import Any, Generic
+from typing import Any, Generic, TypeVar
 from uuid import UUID
 
+from pydantic import BaseModel
 from redis.asyncio import Redis
 from redis.exceptions import WatchError
 
-from storage.core.entity import utc_now
-from storage.core.repository import BaseRepository, EntityT, CreateSchemaT, UpdateSchemaT
+from storage.core.entity import BaseEntity, utc_now
+from storage.core.repository import BaseRepository
 from storage.exceptions import ConcurrencyError, NotFoundError
+
+EntityT = TypeVar("EntityT", bound=BaseEntity)
+CreateSchemaT = TypeVar("CreateSchemaT", bound=BaseModel)
+UpdateSchemaT = TypeVar("UpdateSchemaT", bound=BaseModel)
 
 
 class RedisRepository(
@@ -63,6 +68,9 @@ class RedisRepository(
         return None
 
     async def list(self, *, limit: int = 100, offset: int = 0, **filters: Any) -> list[EntityT]:
+        if limit == 0:
+            return []
+
         matched: list[EntityT] = []
         skipped = 0
 
@@ -70,11 +78,18 @@ class RedisRepository(
             raw = await self._client.get(key)
             if raw is None:
                 continue
+
             entity = self._deserialize(raw)
             if filters and not self._matches_filters(entity, filters):
                 continue
 
-            if skipped == limit:
+            if skipped != offset:
+                skipped += 1
+                continue
+
+            matched.append(entity)
+
+            if len(matched) == limit:
                 break
 
         return matched
@@ -100,7 +115,7 @@ class RedisRepository(
         async with self._client.pipeline(transaction=True) as pipe:
             try:
                 await pipe.watch(key)
-                raw = await pipe.get(key)
+                raw = await self._client.get(key)
 
                 if raw is None:
                     await pipe.unwatch()
@@ -120,10 +135,9 @@ class RedisRepository(
                 update_data["version"] = current_entity.version + 1
 
                 updated_entity = current_entity.model_copy(update=update_data)
+                remaining_pttl = await self._client.pttl(key)
 
-                remaining_pttl = await pipe.pttl(key)
                 pipe.multi()
-
                 if ttl is not None:
                     await pipe.set(key, updated_entity.model_dump_json(), ex=ttl)
                 elif remaining_pttl > 0:
@@ -156,7 +170,7 @@ class RedisRepository(
         async with self._client.pipeline(transaction=True) as pipe:
             try:
                 await pipe.watch(key)
-                raw = await pipe.get(key)
+                raw = await self._client.get(key)
 
                 if raw is None:
                     await pipe.unwatch()
