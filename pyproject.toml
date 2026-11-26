@@ -55,5 +55,6 @@ dev = [
     "aiosqlite>=0.22.1",
     "beanie>=1.30.0",
     "motor>=3.7.1",
+    "redis>=5.3.1",
     "sqlalchemy[asyncio]>=2.1.9",
 ]

@@ -848,6 +848,7 @@ dev = [
     { name = "aiosqlite" },
     { name = "beanie" },
     { name = "motor" },
+    { name = "redis" },
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 
@@ -875,5 +876,6 @@ dev = [
     { name = "aiosqlite", specifier = ">=0.22.1" },
     { name = "beanie", specifier = ">=1.30.0" },
     { name = "motor", specifier = ">=3.7.1" },
+    { name = "redis", specifier = ">=5.3.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.1.9" },
 ]
