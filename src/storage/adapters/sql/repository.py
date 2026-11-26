@@ -1,7 +1,6 @@
-from typing import Any, Generic, Literal, TypeVar, overload
+from typing import Any, Generic, TypeVar
 from uuid import UUID
 
-from pydantic import BaseModel
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import select
 from sqlalchemy import update as sa_update
@@ -9,13 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from storage.adapters.sql.models import SQLBaseModel
 from storage.core.entity import utc_now
-from storage.core.repository import BaseRepository
+from storage.core.repository import BaseRepository, EntityT, CreateSchemaT, UpdateSchemaT
 from storage.exceptions import ConcurrencyError, NotFoundError
 
+
 ModelT = TypeVar("ModelT", bound=SQLBaseModel)
-EntityT = TypeVar("EntityT", bound=BaseModel)
-CreateSchemaT = TypeVar("CreateSchemaT", bound=BaseModel)
-UpdateSchemaT = TypeVar("UpdateSchemaT", bound=BaseModel)
 
 
 class SQLRepository(

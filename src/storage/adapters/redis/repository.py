@@ -1,17 +1,12 @@
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic
 from uuid import UUID
 
-from pydantic import BaseModel
 from redis.asyncio import Redis
 from redis.exceptions import WatchError
 
-from storage.core.entity import BaseEntity, utc_now
-from storage.core.repository import BaseRepository
+from storage.core.entity import utc_now
+from storage.core.repository import BaseRepository, EntityT, CreateSchemaT, UpdateSchemaT
 from storage.exceptions import ConcurrencyError, NotFoundError
-
-EntityT = TypeVar("EntityT", bound=BaseEntity)
-CreateSchemaT = TypeVar("CreateSchemaT", bound=BaseModel)
-UpdateSchemaT = TypeVar("UpdateSchemaT", bound=BaseModel)
 
 
 class RedisRepository(

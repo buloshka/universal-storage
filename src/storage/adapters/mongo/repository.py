@@ -1,18 +1,15 @@
 from typing import Any, Generic, TypeVar
 from uuid import UUID
 
-from pydantic import BaseModel
 from pymongo import ReturnDocument
 
 from storage.adapters.mongo.models import MongoBaseModel
 from storage.core.entity import utc_now
-from storage.core.repository import BaseRepository
+from storage.core.repository import BaseRepository, EntityT, CreateSchemaT, UpdateSchemaT
 from storage.exceptions import ConcurrencyError, NotFoundError
 
+
 DocT = TypeVar("DocT", bound=MongoBaseModel)
-EntityT = TypeVar("EntityT", bound=BaseModel)
-CreateSchemaT = TypeVar("CreateSchemaT", bound=BaseModel)
-UpdateSchemaT = TypeVar("UpdateSchemaT", bound=BaseModel)
 
 
 class MongoRepository(
